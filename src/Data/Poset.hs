@@ -14,6 +14,7 @@ module Data.Poset
 
 import qualified Prelude
 import Prelude hiding (Ord(..), Ordering(..))
+import qualified Data.List as List
 import Data.Poset.Instances
 import Data.Poset.Internal
 
@@ -28,9 +29,13 @@ instance Poset a => Poset (Maybe a) where
 instance Poset a => Poset [a] where
   compare = (mconcat .) . zipWith compare
 
--- | SOrt a list using the default comparison function.
+-- | Sort a list using the default comparison function.
 sort :: Sortable a => [a] -> [a]
 sort = sortBy compare
+
+-- | Sort a list using (isOrder, compare).
+sortBy' :: ((a -> Bool), (a -> a -> Ordering)) -> [a] -> [a]
+sortBy' (p, f) = List.sortBy ((totalOrder.).f) . filter p
 
 -- | Apply a function to values before comparing.
 comparing :: Poset b => (a -> b) -> a -> a -> Ordering
