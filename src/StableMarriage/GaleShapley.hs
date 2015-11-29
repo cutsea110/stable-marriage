@@ -1,11 +1,11 @@
 module StableMarriage.GaleShapley where
 
-import Prelude hiding (Ordering(..), Ord(..))
-import qualified Prelude as Org
+import Prelude hiding (Ordering(..))
+import qualified Prelude
 import Control.Arrow ((&&&))
 import Data.List (find, sortOn, groupBy, nub, (\\))
 import Data.Maybe (isJust)
-import Data.Poset (Ordering(..), sortBy', Poset(..))
+import Data.Poset as PO (Ordering(..), sortBy', Poset(..))
 import Data.Function (on)
 
 type Name = String
@@ -15,16 +15,16 @@ instance Show Male where
   show (M n _) = n
 instance Eq Male where
   (M n1 _) == (M n2 _) = n1 == n2
-instance Org.Ord Male where
-  M n1 _ <= M n2 _ = n1 <= n2
+instance Ord Male where
+  M n1 _ <= M n2 _ = n1 PO.<= n2
 
 data Female = F Name ((Male -> Bool), (Male -> Male -> Ordering))
 instance Show Female where
   show (F n _) = n
 instance Eq Female where
   (F n1 _) == (F n2 _) = n1 == n2
-instance Org.Ord Female where
-  F n1 _ <= F n2 _ = n1 <= n2
+instance Ord Female where
+  F n1 _ <= F n2 _ = n1 PO.<= n2
 
 alan, bill, charles, david :: Male
 -- | Test Case 1
@@ -45,8 +45,8 @@ mkCmp ms x y = comp mx my
       comp Nothing Nothing = NC
       comp (Just _) Nothing = GT
       comp Nothing (Just _) = LT
-      comp (Just (l, v)) (Just (r, w)) | v > w = GT
-                                       | v < w = LT
+      comp (Just (l, v)) (Just (r, w)) | v PO.> w = GT
+                                       | v PO.< w = LT
                                        | v == w = EQ
                                        | otherwise = NC
       tpl = zip ms ([1..] :: [Int])
