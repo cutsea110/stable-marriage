@@ -8,6 +8,14 @@ import Data.Maybe (isJust)
 import Data.Poset as PO (Ordering(..), sortBy', Poset(..))
 import Data.Function (on)
 
+class Men a where
+  data W a :: *
+  ranks :: [W a]
+
+class Women a where
+  data M a :: *
+  cmp :: M a -> M a -> PO.Ordering
+
 type Name = String
 
 data Male = M Name [Female]
