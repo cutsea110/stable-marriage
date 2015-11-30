@@ -91,10 +91,10 @@ choice :: Women m (W m) => [(W m, [m])] -> ([(W m, [m])], [m])
 choice = gather . map judge
     where
       judge :: (Men m, w ~ W m, Women m w) => (w, [m]) -> ((w, [m]), [m])
-      judge (f, ms) = let ords = sortBy' (acceptable f, compare f) ms
+      judge (w, ms) = let ords = sortBy' (acceptable w, compare w) ms
                       in if null ords
-                         then ((f, []), [])
-                         else ((f, [head ords]), tail ords)
+                         then ((w, []), [])
+                         else ((w, [head ords]), tail ords)
       gather :: (Men m, w ~ W m) => [((w, [m]), [m])] -> ([(w, [m])], [m])
       gather = map fst &&& concatMap snd
 
