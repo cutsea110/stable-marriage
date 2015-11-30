@@ -5,7 +5,9 @@
 module StableMarriage.GaleShapley
        ( Men(..)
        , Women(..)
-       , reduce
+       , World
+       , Couple
+       , meets
        ) where
 
 import Prelude hiding (Ordering(..), compare)
@@ -96,5 +98,5 @@ choice = gather . map judge
       gather :: (Men m, w ~ W m) => [((w, [m]), [m])] -> ([(w, [m])], [m])
       gather = map fst &&& concatMap snd
 
-reduce :: Women m (W m) => [W m] -> [m] -> ([(W m, [m])], [m])
-reduce ws ms = marriage (zip ws (repeat []), ms)
+meets :: Women m (W m) => [m] -> [W m] -> ([(W m, [m])], [m])
+meets ms ws = marriage (zip ws (repeat []), ms)
