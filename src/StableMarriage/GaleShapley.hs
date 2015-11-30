@@ -1,181 +1,120 @@
+{-# LANGUAGE RankNTypes #-}
 module StableMarriage.GaleShapley where
 
-import Prelude hiding (Ordering(..))
+import Prelude hiding (Ordering(..), compare)
 import qualified Prelude
 import Control.Arrow ((&&&))
 import Data.List (find, sortOn, groupBy, nub, (\\))
 import Data.Maybe (isJust)
-import Data.Poset as PO (Ordering(..), sortBy', Poset(..))
+import Data.Poset as PO (Ordering(..), sortBy', Poset((<),(<=),(>=),(>)))
 import Data.Function (on)
 
-class Men a where
-  data W a :: *
-  ranks :: [W a]
+class Men m where
+  type W m :: *
+  loves :: m -> [W m]
+  forget :: m -> m
 
-class Women a where
-  data M a :: *
-  cmp :: M a -> M a -> PO.Ordering
+class (Ord w, Men m, W m ~ w) => Women m w where
+  acceptable :: w -> m -> Bool
+  compare :: w -> m -> m -> PO.Ordering
 
-type Name = String
+type World w m = (Men m, Women m w, W m ~ w) => ([(w, [m])], [m])
+type Couple w m = (Men m, Women m w, W m ~ w) => (w, [m])
 
-data Male = M Name [Female]
-instance Show Male where
-  show (M n _) = n
-instance Eq Male where
-  (M n1 _) == (M n2 _) = n1 == n2
-instance Ord Male where
-  M n1 _ <= M n2 _ = n1 PO.<= n2
-
-data Female = F Name ((Male -> Bool), (Male -> Male -> Ordering))
-instance Show Female where
-  show (F n _) = n
-instance Eq Female where
-  (F n1 _) == (F n2 _) = n1 == n2
-instance Ord Female where
-  F n1 _ <= F n2 _ = n1 PO.<= n2
-
-alan, bill, charles, david :: Male
--- | Test Case 1
--- alan = M "Alan" [kathy, lucy, mary, nancy]
--- bill = M "Bill" [kathy, nancy, mary, lucy]
--- charles = M "Charles" [lucy, mary, kathy, nancy]
--- david = M "David" [lucy, mary, kathy, nancy]
-
--- | Test Case 2
-alan = M "Alan" [kathy, lucy, mary, nancy]
-bill = M "Bill" [nancy, kathy, mary, lucy]
-charles = M "Charles" [lucy, mary, kathy, nancy]
-david = M "David" [mary, lucy, kathy, nancy]
-
-mkCmp :: [Male] -> Male -> Male -> Ordering
-mkCmp ms x y = comp mx my
-    where
-      comp Nothing Nothing = NC
-      comp (Just _) Nothing = GT
-      comp Nothing (Just _) = LT
-      comp (Just (l, v)) (Just (r, w)) | v PO.> w = GT
-                                       | v PO.< w = LT
-                                       | v == w = EQ
-                                       | otherwise = NC
-      tpl = zip ms ([1..] :: [Int])
-      mx = find ((==x).fst) tpl
-      my = find ((==y).fst) tpl
-
-mkPred :: [Male] -> Male -> Bool
-mkPred ms m = m `elem` ms
-
-{- -- | Test Case 1
-kathy, lucy, mary, nancy :: Female
-kathy = F "Kathy" (mkPred ords, mkCmp ords)
-    where
-      ords = [charles, david, bill, alan]
-lucy = F "Lucy" (mkPred ords, mkCmp ords)
-    where
-      ords = [david, charles, alan, bill]
-mary = F "Mary" (mkPred ords, mkCmp ords)
-    where
-      ords = [david, alan, bill, charles]
-nancy = F "Nancy" (mkPred ords, mkCmp ords)
-    where
-      ords = [charles, alan, bill, david]
--}
-
--- | Test Case 2
-kathy, lucy, mary, nancy :: Female
-kathy = F "Kathy" (mkPred ords, mkCmp ords)
-    where
-      ords = [charles, david, bill, alan]
-lucy = F "Lucy" (mkPred ords, mkCmp ords)
-    where
-      ords = [david, alan, bill, charles]
-mary = F "Mary" (mkPred ords, mkCmp ords)
-    where
-      ords = [david, alan, bill, charles]
-nancy = F "Nancy" (mkPred ords, mkCmp ords)
-    where
-      ords = [charles, alan, david, bill]
-
-guys :: [Male]
-guys = [alan, bill, charles, david]
-babies :: [Female]
-babies = [kathy, lucy, mary, nancy]
-
-type Couples = [(Female, [Male])]
-type Males = [Male]
-type Board = (Couples, Males)
-
-
-marriage :: Board -> Board
-marriage b = let b' = counter $ attack b
-             in if stable b'
-                then b'
-                else marriage b'
-
-stable :: Board -> Bool
+marriage :: World w m -> World w m
+marriage x = let x' = counter $ attack x
+              in if stable x'
+                 then x'
+                 else marriage x'
+stable :: (Men m, Women m w) => World w m -> Bool
 stable (cs, ms) = all nochance ms || all keep cs
     where
-      nochance :: Male -> Bool
-      nochance (M _ fs) = null fs
-      keep :: (Female, Males) -> Bool
-      keep (_, ms) = not (null ms)
+      nochance :: Men m => m -> Bool
+      nochance = null . loves
+      keep :: (w, [m]) -> Bool
+      keep = not . null . snd
 
-attack :: Board -> Board
+attack :: World w m -> World w m
 attack (cs, ms) = (cs', ms')
     where
       cs' = join cs (propose ms)
       ms' = despair ms
 
-propose :: Males -> Couples
+propose :: (Men m, w ~ W m, Ord w) => [m] -> [(w, [m])]
 propose = gather . competes
     where
-      competes :: Males -> [[(Female, Male)]]
-      competes = groupBy ((==) `on` fst) . sortOn fst . concatMap c'
+      competes :: (Men m, w ~ W m, Ord w) => [m] -> [[(w, m)]]
+      competes = groupBy ((==) `on` fst) . sortOn fst . concatMap next
           where
-            c' (M _ []) = []
-            c' m@(M _ (f:_)) = [(f, m)]
-      gather :: [[(Female, Male)]] -> Couples
+            next :: (Men m, w ~ W m) => m -> [(w, m)]
+            next m = let xs = loves m
+                     in if null xs
+                        then []
+                        else [(head xs, m)]
+      gather :: (Men m, w ~ W m) => [[(w, m)]] -> [(w, [m])]
       gather = map sub
           where
-            sub :: [(Female, Male)] -> (Female, [Male])
-            sub cs@((f, m):_) = (f, map snd cs)
+            sub :: (Men m, w ~ W m) => [(w, m)] -> (w, [m])
+            sub cs@((w, m):_) = (w, map snd cs)
 
-join :: Couples -> Couples -> Couples
+join :: (Men m, w ~ W m, Ord w) => [(w, [m])] -> [(w, [m])] -> [(w, [m])]
 join cs xs = gather $ groupBy ((==) `on` fst) $ sortOn fst $ cs ++ xs
     where
-      gather :: [[(Female, [Male])]] -> [(Female, [Male])]
+      gather :: (Men m, w ~ W m) => [[(w, [m])]] -> [(w, [m])]
       gather = map sub
           where
-            sub :: [(Female, [Male])] -> (Female, [Male])
-            sub cs@((f, m):_) = (f, concatMap snd cs)
+            sub :: (Men m, w ~ W m) => [(w, [m])] -> (w, [m])
+            sub cs@((w, m):_) = (w, concatMap snd cs)
 
-despair :: Males -> Males
-despair = filter (\(M _ fs) -> null fs)
+despair :: Men m => [m] -> [m]
+despair = filter (null . loves)
 
-counter :: Board -> Board
+counter :: World w m -> World w m
 counter (cs, ms) = (cs', ms'')
     where
       (cs', ms') = choice cs
       ms'' = ms ++ heartbreak ms'
 
-type Keepies = Males
-type Dumped = Males
+      heartbreak :: Men m => [m] -> [m]
+      heartbreak = map forget
 
-choice :: Couples -> (Couples, Dumped)
+
+choice :: (Men m, w ~ W m, Women m w) => [(w, [m])] -> ([(w, [m])], [m])
 choice = gather . map judge
     where
-      judge :: (Female, Males) -> ((Female, Keepies), Dumped)
-      judge (f@(F _ cmp), ms) = let ords = sortBy' cmp ms
-                                in if null ords
-                                   then ((f, []), [])
-                                   else ((f, [head ords]), tail ords)
-      gather :: [((Female, Keepies), Dumped)] -> (Couples, Dumped)
+      judge :: (Men m, w ~ W m, Women m w) => (w, [m]) -> ((w, [m]), [m])
+      judge (f, ms) = let ords = sortBy' (acceptable f, compare f) ms
+                      in if null ords
+                         then ((f, []), [])
+                         else ((f, [head ords]), tail ords)
+      gather :: (Men m, w ~ W m) => [((w, [m]), [m])] -> ([(w, [m])], [m])
       gather = map fst &&& concatMap snd
 
-heartbreak :: Dumped -> Males
-heartbreak = map forget
-    where
-      forget :: Male -> Male
-      forget (M n (_:fs)) = M n fs
+-- | Test
 
-initBoard :: Board
-initBoard = (zip babies (repeat []), guys)
+type Name = String
+data Boy = B { boyName :: Name, ranking :: [Girl] } deriving (Show, Eq, Ord)
+data Girl = G { girlName :: Name, selects :: [Boy] } deriving (Show, Eq, Ord)
+
+instance Men Boy where
+  type W Boy = Girl
+  loves = ranking
+  forget x = x { ranking = tail (ranking x) }
+
+instance Women Boy Girl where
+  acceptable w m = m `elem` selects w
+  compare = mkCmp . selects
+      where
+        mkCmp :: [Boy] -> Boy -> Boy -> Ordering
+        mkCmp bs b1 b2 = cmp mb1 mb2
+            where
+              cmp Nothing Nothing = NC
+              cmp (Just _) Nothing = GT
+              cmp Nothing (Just _) = LT
+              cmp (Just (_, v)) (Just (_, w)) | v PO.> w = GT
+                                              | v PO.< w = LT
+                                              | v == w = EQ
+                                              | otherwise = NC
+              tpl = zip bs ([1..]::[Int])
+              mb1 = find ((==b1).fst) tpl
+              mb2 = find ((==b2).fst) tpl
