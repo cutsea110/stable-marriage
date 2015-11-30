@@ -24,8 +24,8 @@ class Men m where
 class (Ord w, Men m, w ~ W m) => Women m w where
   acceptable :: w -> m -> Bool
   compare :: w -> m -> m -> PO.Ordering
-  limit :: W m -> Int
-  limit _ = 1
+  limit :: w -> [m] -> Int
+  limit _ _ = 1
 
 type World w m = (Men m, Women m w, w ~ W m) => ([(w, [m])], [m])
 type Couple w m = (Men m, Women m w, w ~ W m) => (w, [m])
@@ -93,7 +93,7 @@ choice :: (Men m, Women m w, w ~ W m) => [(w, [m])] -> ([(w, [m])], [m])
 choice = gather . map judge
     where
       judge :: (Men m, Women m w, w ~ W m) => (w, [m]) -> ((w, [m]), [m])
-      judge (w, ms) = let (cs, rs) = splitAt 1 $ sortBy' (acceptable w, compare w) ms
+      judge (w, ms) = let (cs, rs) = splitAt (limit w ms) $ sortBy' (acceptable w, compare w) ms
                       in ((w, cs), rs)
       gather :: (Men m, Women m w, w ~ W m) => [((w, [m]), [m])] -> ([(w, [m])], [m])
       gather = map fst &&& concatMap snd
