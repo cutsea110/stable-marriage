@@ -37,12 +37,12 @@ marriage x = let x' = counter $ attack x
                 else marriage x'
 
 stable :: (Men m, Women m w, w ~ W m) => World w m -> Bool
-stable (cs, ms) = all nochance ms || all keep cs
+stable (cs, ms) = all nochance ms
     where
       nochance :: Men m => m -> Bool
       nochance = null . loves
-      keep :: (w, [m]) -> Bool
-      keep = not . null . snd
+      satisfy :: (Men m, Women m w, w ~ W m) => (w, [m]) -> Bool
+      satisfy (w, ms) = limit w ms <= length ms
 
 attack :: World w m -> World w m
 attack (cs, ms) = (cs', ms')
