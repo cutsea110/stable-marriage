@@ -16,7 +16,7 @@ cabal-version:       >=1.10
 library
   hs-source-dirs:      src
   exposed-modules:     StableMarriage.GaleShapley
-                       Data.Poset
+  other-modules:       Data.Poset
                        Data.Poset.Internal
                        Data.Poset.Instances
   build-depends:       base >= 4.8 && < 5

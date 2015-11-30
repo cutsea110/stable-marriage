@@ -7,6 +7,9 @@ module StableMarriage.GaleShapley
        , Women(..)
        , World
        , meets
+
+       -- re-export
+       , PO.Ordering(..)
        ) where
 
 import Prelude hiding (Ordering(..), compare)

@@ -2,7 +2,6 @@ module Test2 where
 
 import Prelude hiding (Ordering(..))
 import StableMarriage.GaleShapley
-import Data.Poset as PO (Ordering(..), Poset((<),(<=),(>=),(>)))
 import Data.List (find)
 
 -- | Active Girls meets Passive Boys
@@ -40,8 +39,8 @@ instance Women Girl Boy where
               cmp Nothing Nothing = NC
               cmp (Just _) Nothing = GT
               cmp Nothing (Just _) = LT
-              cmp (Just (_, v)) (Just (_, w)) | v PO.> w = GT
-                                              | v PO.< w = LT
+              cmp (Just (_, v)) (Just (_, w)) | v > w = GT
+                                              | v < w = LT
                                               | v == w = EQ
                                               | otherwise = NC
               tpl = zip bs ([1..]::[Int])
