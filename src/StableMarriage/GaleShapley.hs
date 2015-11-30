@@ -6,7 +6,6 @@ module StableMarriage.GaleShapley
        ( Men(..)
        , Women(..)
        , World
-       , Couple
        , meets
        ) where
 
@@ -28,7 +27,6 @@ class (Ord w, Men m, w ~ W m) => Women m w where
   limit _ _ = 1
 
 type World w m = (Men m, Women m w, w ~ W m) => ([(w, [m])], [m])
-type Couple w m = (Men m, Women m w, w ~ W m) => (w, [m])
 
 marriage :: World w m -> World w m
 marriage x = let x' = counter $ attack x
@@ -89,14 +87,14 @@ counter (cs, ms) = (cs', ms'')
       heartbreak = map forget
 
 
-choice :: (Men m, Women m w, w ~ W m) => [(w, [m])] -> ([(w, [m])], [m])
+choice :: (Men m, Women m w, w ~ W m) => [(w, [m])] -> World w m
 choice = gather . map judge
     where
       judge :: (Men m, Women m w, w ~ W m) => (w, [m]) -> ((w, [m]), [m])
       judge (w, ms) = let (cs, rs) = splitAt (limit w ms) $ sortBy' (acceptable w, compare w) ms
                       in ((w, cs), rs)
-      gather :: (Men m, Women m w, w ~ W m) => [((w, [m]), [m])] -> ([(w, [m])], [m])
+      gather :: (Men m, Women m w, w ~ W m) => [((w, [m]), [m])] -> World w m
       gather = map fst &&& concatMap snd
 
-meets :: (Men m, Women m w, w ~ W m) => [m] -> [w] -> ([(w, [m])], [m])
+meets :: (Men m, Women m w, w ~ W m) => [m] -> [w] -> World w m
 meets ms ws = marriage (zip ws (repeat []), ms)
