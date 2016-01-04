@@ -96,7 +96,8 @@ choice = gather . map judge
       judge :: (Men m, Women m w, w ~ W m) => (w, [m]) -> ((w, [m]), [m])
       judge (w, ms) = let (n, p, cmp) = (limit w ms, acceptable w, compare w)
                           (cs, rs) = splitAt n $ sortBy' (p, cmp) ms
-                      in ((w, cs), rs)
+                          out = filter (not . p) ms
+                      in ((w, cs), rs ++ out)
       gather :: (Men m, Women m w, w ~ W m) => [((w, [m]), [m])] -> World w m
       gather = map fst &&& concatMap snd
 
