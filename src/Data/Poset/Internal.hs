@@ -111,7 +111,7 @@ class Poset a => Sortable a where
 class Sortable a => Ord a
 
 -- This hack allows us to leverage existing data structures defined in terms of 'Prelude.Ord'.
-instance  {-# OVERLAPS #-} Data.Poset.Internal.Ord a => Prelude.Ord a where
+instance  {-# OVERLAPS #-} (Eq a, Data.Poset.Internal.Ord a) => Prelude.Ord a where
   compare = (totalOrder .) . compare
   (<)  = (<)
   (<=) = (<=)
