@@ -5,18 +5,21 @@ import qualified Data.List as List
 import qualified GHC.Types as Types
 import qualified Prelude
 import Prelude hiding (Ordering(..), Ord(..))
+import Data.Semigroup
 import Data.Monoid
 
 data Ordering = LT | EQ | GT | NC
               deriving (Eq, Show, Read, Bounded, Enum)
 
+instance Semigroup Ordering where
+  EQ <> x = x
+  NC <> _ = NC
+  LT <> _ = LT
+  GT <> _ = GT
+
 -- Lexicographic ordering.
 instance Monoid Ordering where
   mempty = EQ
-  mappend EQ x = x
-  mappend NC _ = NC
-  mappend LT _ = LT
-  mappend GT _ = GT
 
 -- | Internal-use function to convert our Ordering to the ordinary one.
 totalOrder :: Ordering -> Types.Ordering
