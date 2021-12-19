@@ -21,7 +21,7 @@ library
   other-modules:       Data.Poset
                        Data.Poset.Internal
                        Data.Poset.Instances
-  build-depends:       base >=4.12.0.0 && <4.16,
+  build-depends:       base >=4.12.0.0,
                        ghc-prim >= 0.4
   hs-source-dirs:      src
   default-language:    Haskell2010
@@ -31,4 +31,4 @@ test-suite stable-marriage-test
   type:                exitcode-stdio-1.0
   hs-source-dirs:      test
   main-is:             MyLibTest.hs
-  build-depends:       base >=4.12.0.0 && <4.16, ghc-prim >=0.5.3
+  build-depends:       base >=4.12.0.0, ghc-prim >=0.5.3
